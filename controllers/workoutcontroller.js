@@ -5,8 +5,7 @@ let validateJWT = require("../middleware/validate-jwt");
 const { WorkoutModel } = require('../models');
 
 //!============================================================================================
-//! Check security issues, screenshots needed, and refer to addition info  on assignment page
-//!============================================================================================
+//! Check security issues===============================================
 
 
 //!====================
@@ -34,20 +33,29 @@ router.post('/create', validateJWT, async(req, res) => {
 //!====================
 //! Get All Workout Log
 //!====================
-router.get("/", validateJWT, async(req, res) => {
+router.get("/mine/", validateJWT, async(req, res) => {
+    let { id } = req.user;
     try {
-        const entries = await WorkoutModel.findAll();
-        res.status(200).json(entries);
+        const userWorkout = await WorkoutModel.findAll({
+            where: {
+                owner: id
+            }
+        });
+        res.status(200).json(userWorkout);
     } catch (err) {
         res.status(500).json({ error: err });
     }
 });
 
 //!=======================
-//! Get Workout Log by ID  //! security issue - able to get another user's log
+//! Get Workout Log by ID  
 //!=======================
-router.get("/:id", validateJWT, async(req, res) => {
+router.get("/mine/:id", validateJWT, async(req, res) => {
+
+    const { id } = req.params;
+
     try {
+
         const locatedWorkout = await WorkoutModel.findAll({
             where: { id: req.params.id },
         });
@@ -64,9 +72,27 @@ router.get("/:id", validateJWT, async(req, res) => {
 //! Update Workout Log    //! security issue - able to update another user's log
 //!====================
 router.put("/update/:id", validateJWT, async(req, res) => {
-    const { description, definition, result } = req.body;
+    const { description, definition, result } = req.body.workout;
+    const userId = req.user.id;
+    const workoutId = req.params.id;
+
+
 
     try {
+
+        const query = {
+            where: {
+                id: workoutId,
+                owner: userId
+            }
+        };
+
+        const updatedJournal = {
+            description: description,
+            definition: definition,
+            result: result
+        };
+
         await WorkoutModel.update({ description, definition, result }, { where: { id: req.params.id }, returning: true })
             .then((result) => {
                 res.status(200).json({
@@ -85,11 +111,16 @@ router.put("/update/:id", validateJWT, async(req, res) => {
 //!====================
 //! Delete Workout Log
 //!====================
-router.delete("/:id", validateJWT, async(req, res) => { //! security issue - able to delete another user's log
+router.delete("/delete/:id", validateJWT, async(req, res) => {
+    const userId = req.user.id;
+    const workoutId = req.params.id;
+
     try {
+
         const query = {
             where: {
-                id: req.params.id
+                id: workoutId,
+                owner: userId
             }
         };
         await WorkoutModel.destroy(query);
@@ -100,5 +131,7 @@ router.delete("/:id", validateJWT, async(req, res) => { //! security issue - abl
         });
     }
 });
+
+
 
 module.exports = router;
