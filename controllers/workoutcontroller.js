@@ -48,7 +48,7 @@ router.get("/mine/", validateJWT, async(req, res) => {
 });
 
 //!=======================
-//! Get Workout Log by ID  
+//! Get Workout Log by ID     !!!!wrong response 
 //!=======================
 router.get("/mine/:id", validateJWT, async(req, res) => {
 
@@ -57,7 +57,10 @@ router.get("/mine/:id", validateJWT, async(req, res) => {
     try {
 
         const locatedWorkout = await WorkoutModel.findAll({
-            where: { id: req.params.id },
+            where: {
+                id: req.params.id,
+                owner: req.user.id
+            },
         });
         res
             .status(200)
