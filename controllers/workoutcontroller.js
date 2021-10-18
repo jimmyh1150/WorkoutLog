@@ -4,8 +4,7 @@ const router = Express.Router();
 let validateJWT = require("../middleware/validate-jwt");
 const { WorkoutModel } = require('../models');
 
-//!============================================================================================
-//! Check security issues===============================================
+
 
 
 //!====================
@@ -48,7 +47,7 @@ router.get("/mine/", validateJWT, async(req, res) => {
 });
 
 //!=======================
-//! Get Workout Log by ID     !!!!wrong response 
+//! Get Workout Log by ID     !!!!wrong response but only returns for active user logged in
 //!=======================
 router.get("/mine/:id", validateJWT, async(req, res) => {
 
@@ -72,47 +71,24 @@ router.get("/mine/:id", validateJWT, async(req, res) => {
 
 
 //!====================
-//! Update Workout Log    //! security issue - able to update another user's log
+//! Update Workout Log    //! wrong response but only updates for active user logged in
 //!====================
+
+
 router.put("/update/:id", validateJWT, async(req, res) => {
     const { description, definition, result } = req.body.workout;
-    const userId = req.user.id;
-    const workoutId = req.params.id;
-
-
 
     try {
+        const updateWorkout = Workout = await WorkoutModel.update({ description, definition, result }, { where: { id: req.params.id, owner: req.user.id } })
+        res.status(200).json({ message: "updated successfully", updateWorkout })
 
-        const query = {
-            where: {
-                id: workoutId,
-                owner: userId
-            }
-        };
+    } catch (error) {
+        res.status(500).json({ message: "update failed", updateWorkout })
 
-        const updatedJournal = {
-            description: description,
-            definition: definition,
-            result: result
-        };
-
-        await WorkoutModel.update({ description, definition, result }, { where: { id: req.params.id }, returning: true })
-            .then((result) => {
-                res.status(200).json({
-                    message: "Workout log successfully updated",
-                    updatedWorkout: result
-                });
-            });
-
-    } catch (err) {
-        res.status(500).json({
-            message: `Failed to update workout log: ${err}`
-        });
     }
 });
-
 //!====================
-//! Delete Workout Log
+//! Delete Workout Log //! wrong response but only deletes active user logged in
 //!====================
 router.delete("/delete/:id", validateJWT, async(req, res) => {
     const userId = req.user.id;
